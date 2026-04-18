@@ -1,5 +1,4 @@
 import AVFoundation
-import CoreAudio
 import SwiftUI
 
 private func makePlayer(assetName: String, fileTypeHint: String? = nil) -> AVAudioPlayer {
@@ -16,14 +15,12 @@ private func makePlayer(assetName: String, fileTypeHint: String? = nil) -> AVAud
 
 class TBPlayer: ObservableObject {
     private let rainVolumeMultiplier = 0.15
-    private var externalAudioMonitor: DispatchSourceTimer?
     private var windupSound: AVAudioPlayer
     private var dingSound: AVAudioPlayer
     private var rainSound: AVAudioPlayer
 
     @Published private(set) var isRainEnabled = false
     @Published private(set) var isRainPlaying = false
-    @Published private(set) var isRainAutoPaused = false
 
     @AppStorage("windupVolume") var windupVolume: Double = 1.0 {
         didSet {
@@ -82,9 +79,9 @@ class TBPlayer: ObservableObject {
             return
         }
         isRainEnabled = true
+        rainSound.play()
+        isRainPlaying = true
         TBStatusItem.shared.setRainEnabled(true)
-        startExternalAudioMonitor()
-        refreshRainPlaybackForExternalAudio()
     }
 
     func stopRain() {
@@ -92,9 +89,9 @@ class TBPlayer: ObservableObject {
             return
         }
         isRainEnabled = false
-        isRainAutoPaused = false
-        stopExternalAudioMonitor()
-        stopRainPlayback(resetPosition: true)
+        rainSound.stop()
+        rainSound.currentTime = 0
+        isRainPlaying = false
         TBStatusItem.shared.setRainEnabled(false)
     }
 
@@ -103,156 +100,6 @@ class TBPlayer: ObservableObject {
             stopRain()
         } else {
             startRain()
-        }
-    }
-
-    private func startExternalAudioMonitor() {
-        guard externalAudioMonitor == nil else {
-            return
-        }
-
-        let timer = DispatchSource.makeTimerSource(queue: .main)
-        timer.schedule(deadline: .now(), repeating: .seconds(1))
-        timer.setEventHandler { [weak self] in
-            self?.refreshRainPlaybackForExternalAudio()
-        }
-        externalAudioMonitor = timer
-        timer.resume()
-    }
-
-    private func stopExternalAudioMonitor() {
-        externalAudioMonitor?.cancel()
-        externalAudioMonitor = nil
-    }
-
-    private func playRainPlayback() {
-        guard !rainSound.isPlaying else {
-            return
-        }
-        rainSound.play()
-        isRainPlaying = true
-    }
-
-    private func stopRainPlayback(resetPosition: Bool) {
-        if rainSound.isPlaying {
-            rainSound.stop()
-        }
-        if resetPosition {
-            rainSound.currentTime = 0
-        }
-        isRainPlaying = false
-    }
-
-    private func refreshRainPlaybackForExternalAudio() {
-        guard isRainEnabled else {
-            return
-        }
-
-        if isExternalAudioPlaying() {
-            isRainAutoPaused = true
-            stopRainPlayback(resetPosition: false)
-        } else {
-            isRainAutoPaused = false
-            playRainPlayback()
-        }
-    }
-
-    private func isExternalAudioPlaying() -> Bool {
-        let ownPID = getpid()
-
-        for processObject in audioObjectIDs(
-            selector: kAudioHardwarePropertyProcessObjectList,
-            objectID: AudioObjectID(kAudioObjectSystemObject)
-        ) {
-            guard let pid = audioProperty(
-                selector: kAudioProcessPropertyPID,
-                objectID: processObject,
-                valueType: pid_t.self
-            ), pid != ownPID else {
-                continue
-            }
-
-            let isRunningOutput = audioProperty(
-                selector: kAudioProcessPropertyIsRunningOutput,
-                objectID: processObject,
-                valueType: UInt32.self
-            ) ?? 0
-            if isRunningOutput != 0 {
-                return true
-            }
-        }
-
-        return false
-    }
-
-    private func audioObjectIDs(
-        selector: AudioObjectPropertySelector,
-        objectID: AudioObjectID,
-        scope: AudioObjectPropertyScope = kAudioObjectPropertyScopeGlobal
-    ) -> [AudioObjectID] {
-        var address = AudioObjectPropertyAddress(
-            mSelector: selector,
-            mScope: scope,
-            mElement: kAudioObjectPropertyElementMain
-        )
-        var dataSize: UInt32 = 0
-
-        guard AudioObjectGetPropertyDataSize(objectID, &address, 0, nil, &dataSize) == noErr else {
-            return []
-        }
-
-        let count = Int(dataSize) / MemoryLayout<AudioObjectID>.size
-        guard count > 0 else {
-            return []
-        }
-
-        var values = Array(repeating: AudioObjectID(), count: count)
-        guard AudioObjectGetPropertyData(objectID,
-                                         &address,
-                                         0,
-                                         nil,
-                                         &dataSize,
-                                         &values) == noErr else {
-            return []
-        }
-        return values
-    }
-
-    private func audioProperty<T>(
-        selector: AudioObjectPropertySelector,
-        objectID: AudioObjectID,
-        scope: AudioObjectPropertyScope = kAudioObjectPropertyScopeGlobal,
-        valueType: T.Type
-    ) -> T? {
-        var address = AudioObjectPropertyAddress(
-            mSelector: selector,
-            mScope: scope,
-            mElement: kAudioObjectPropertyElementMain
-        )
-        var dataSize = UInt32(MemoryLayout<T>.size)
-        var data = Data(count: MemoryLayout<T>.size)
-
-        let status = data.withUnsafeMutableBytes { bytes in
-            guard let baseAddress = bytes.baseAddress else {
-                return kAudioHardwareUnspecifiedError
-            }
-            return AudioObjectGetPropertyData(objectID,
-                                              &address,
-                                              0,
-                                              nil,
-                                              &dataSize,
-                                              baseAddress)
-        }
-
-        guard status == noErr else {
-            return nil
-        }
-
-        return data.withUnsafeBytes { bytes in
-            guard let baseAddress = bytes.baseAddress else {
-                return nil
-            }
-            return baseAddress.assumingMemoryBound(to: T.self).pointee
         }
     }
 }
