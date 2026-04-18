@@ -91,13 +91,51 @@ private struct SettingsView: View {
 
 private struct VolumeSlider: View {
     @Binding var volume: Double
+    private let volumeRange = 0.0...2.0
+    private let step = 0.1
+
+    private func updateVolume(delta: Double) {
+        let nextValue = ((volume + delta) * 10).rounded() / 10
+        volume = min(max(nextValue, volumeRange.lowerBound), volumeRange.upperBound)
+    }
+
+    private func controlButton(symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(.primary)
+                .frame(width: 24, height: 24)
+                .background(
+                    Circle()
+                        .fill(Color.white.opacity(0.12))
+                )
+                .overlay(
+                    Circle()
+                        .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+    }
 
     var body: some View {
-        Slider(value: $volume, in: 0...2) {
+        HStack(spacing: 10) {
+            controlButton(symbol: "minus") {
+                updateVolume(delta: -step)
+            }
+            .opacity(volume > volumeRange.lowerBound ? 1.0 : 0.4)
+            .disabled(volume <= volumeRange.lowerBound)
+
             Text(String(format: "%.1f", volume))
-        }.gesture(TapGesture(count: 2).onEnded({
-            volume = 1.0
-        }))
+                .font(.system(.body).monospacedDigit())
+                .frame(width: 32)
+
+            controlButton(symbol: "plus") {
+                updateVolume(delta: step)
+            }
+            .opacity(volume < volumeRange.upperBound ? 1.0 : 0.4)
+            .disabled(volume >= volumeRange.upperBound)
+        }
+        .frame(maxWidth: .infinity, alignment: .trailing)
     }
 }
 
@@ -110,7 +148,7 @@ private struct SoundsView: View {
     ]
 
     var body: some View {
-        LazyVGrid(columns: columns, alignment: .leading, spacing: 4) {
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
             Text(NSLocalizedString("SoundsView.isWindupEnabled.label",
                                    comment: "Windup label"))
             VolumeSlider(volume: $player.windupVolume)
@@ -120,7 +158,9 @@ private struct SoundsView: View {
             Text(NSLocalizedString("SoundsView.rainVolume.label",
                                    comment: "Rain volume label"))
             VolumeSlider(volume: $player.rainVolume)
-        }.padding(4)
+        }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 10)
         Spacer().frame(minHeight: 0)
     }
 }
