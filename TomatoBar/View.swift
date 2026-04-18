@@ -138,19 +138,36 @@ private struct FullWidthButtonLabel: View {
 
 private struct FilledActionButtonStyle: ButtonStyle {
     let backgroundColor: Color
+    let isActive: Bool
+    let isHovered: Bool
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(backgroundColor.opacity(configuration.isPressed ? 0.75 : 1.0))
+                    .fill(backgroundColor)
+                    .brightness(isActive ? -0.15 : 0)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(Color.white.opacity(isHovered ? 0.10 : 0))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .strokeBorder(Color.white.opacity(isHovered ? 0.22 : 0.08), lineWidth: 1)
+                    )
             )
+            .scaleEffect(configuration.isPressed ? 0.985 : 1)
+            .shadow(color: Color.black.opacity(isHovered ? 0.22 : 0.12),
+                    radius: isHovered ? 8 : 4,
+                    y: isHovered ? 3 : 2)
+            .opacity(configuration.isPressed ? 0.88 : 1.0)
     }
 }
 
 private struct RainToggleButton: View {
     @EnvironmentObject var player: TBPlayer
+    @State private var isHovered = false
 
     private var rainStartLabel = NSLocalizedString("TBPopoverView.rainStart.label",
                                                    comment: "Start rain label")
@@ -163,10 +180,15 @@ private struct RainToggleButton: View {
                 player.toggleRain()
             }
         } label: {
-            FullWidthButtonLabel(text: player.isRainPlaying ? rainStopLabel : rainStartLabel)
+            FullWidthButtonLabel(text: player.isRainEnabled ? rainStopLabel : rainStartLabel)
+        }
+        .onHover { over in
+            isHovered = over
         }
         .controlSize(.large)
-        .buttonStyle(FilledActionButtonStyle(backgroundColor: .blue))
+        .buttonStyle(FilledActionButtonStyle(backgroundColor: .blue,
+                                             isActive: player.isRainEnabled,
+                                             isHovered: isHovered))
     }
 }
 
@@ -176,7 +198,7 @@ private enum ChildView {
 
 struct TBPopoverView: View {
     @ObservedObject var timer = TBTimer()
-    @State private var buttonHovered = false
+    @State private var startButtonHovered = false
     @State private var activeChildView = ChildView.intervals
 
     private var startLabel = NSLocalizedString("TBPopoverView.start.label", comment: "Start label")
@@ -191,15 +213,17 @@ struct TBPopoverView: View {
             } label: {
                 FullWidthButtonLabel(
                     text: timer.timer != nil ?
-                        (buttonHovered ? stopLabel : timer.timeLeftString) :
+                        (startButtonHovered ? stopLabel : timer.timeLeftString) :
                         startLabel
                 )
             }
             .onHover { over in
-                buttonHovered = over
+                startButtonHovered = over
             }
             .controlSize(.large)
-            .buttonStyle(FilledActionButtonStyle(backgroundColor: .accentColor))
+            .buttonStyle(FilledActionButtonStyle(backgroundColor: .accentColor,
+                                                 isActive: timer.timer != nil,
+                                                 isHovered: startButtonHovered))
             .keyboardShortcut(.defaultAction)
 
             RainToggleButton().environmentObject(timer.player)
