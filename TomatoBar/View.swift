@@ -159,7 +159,9 @@ private struct RainToggleButton: View {
 
     var body: some View {
         Button {
-            player.toggleRain()
+            TBStatusItem.shared.performAfterClosingPopover {
+                player.toggleRain()
+            }
         } label: {
             FullWidthButtonLabel(text: player.isRainPlaying ? rainStopLabel : rainStartLabel)
         }
@@ -183,8 +185,9 @@ struct TBPopoverView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
-                timer.startStop()
-                TBStatusItem.shared.closePopover(nil)
+                TBStatusItem.shared.performAfterClosingPopover {
+                    timer.startStop()
+                }
             } label: {
                 FullWidthButtonLabel(
                     text: timer.timer != nil ?

@@ -116,6 +116,15 @@ class TBStatusItem: NSObject, NSApplicationDelegate {
         popover.performClose(sender)
     }
 
+    func performAfterClosingPopover(_ action: @escaping () -> Void) {
+        if popover.isShown {
+            closePopover(nil)
+            DispatchQueue.main.async(execute: action)
+        } else {
+            action()
+        }
+    }
+
     @objc func togglePopover(_ sender: AnyObject?) {
         if popover.isShown {
             closePopover(sender)
