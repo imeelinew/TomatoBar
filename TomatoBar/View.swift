@@ -117,9 +117,9 @@ private struct SoundsView: View {
             Text(NSLocalizedString("SoundsView.isDingEnabled.label",
                                    comment: "Ding label"))
             VolumeSlider(volume: $player.dingVolume)
-            Text(NSLocalizedString("SoundsView.isTickingEnabled.label",
-                                   comment: "Ticking label"))
-            VolumeSlider(volume: $player.tickingVolume)
+            Text(NSLocalizedString("SoundsView.rainVolume.label",
+                                   comment: "Rain volume label"))
+            VolumeSlider(volume: $player.rainVolume)
         }.padding(4)
         Spacer().frame(minHeight: 0)
     }

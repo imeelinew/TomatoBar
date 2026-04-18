@@ -1,10 +1,24 @@
 import AVFoundation
 import SwiftUI
 
+private func makePlayer(assetName: String, fileTypeHint: String? = nil) -> AVAudioPlayer {
+    guard let asset = NSDataAsset(name: assetName) else {
+        fatalError("Missing audio asset: \(assetName)")
+    }
+
+    do {
+        return try AVAudioPlayer(data: asset.data, fileTypeHint: fileTypeHint)
+    } catch {
+        fatalError("Error initializing player for asset \(assetName): \(error)")
+    }
+}
+
 class TBPlayer: ObservableObject {
     private var windupSound: AVAudioPlayer
     private var dingSound: AVAudioPlayer
-    private var tickingSound: AVAudioPlayer
+    private var rainSound: AVAudioPlayer
+
+    @Published private(set) var isRainPlaying = false
 
     @AppStorage("windupVolume") var windupVolume: Double = 1.0 {
         didSet {
@@ -16,9 +30,9 @@ class TBPlayer: ObservableObject {
             setVolume(dingSound, dingVolume)
         }
     }
-    @AppStorage("tickingVolume") var tickingVolume: Double = 1.0 {
+    @AppStorage("rainVolume") var rainVolume: Double = 1.0 {
         didSet {
-            setVolume(tickingSound, tickingVolume)
+            setVolume(rainSound, rainVolume)
         }
     }
 
@@ -27,27 +41,19 @@ class TBPlayer: ObservableObject {
     }
 
     init() {
-        let windupSoundAsset = NSDataAsset(name: "windup")
-        let dingSoundAsset = NSDataAsset(name: "ding")
-        let tickingSoundAsset = NSDataAsset(name: "ticking")
-
         let wav = AVFileType.wav.rawValue
-        do {
-            windupSound = try AVAudioPlayer(data: windupSoundAsset!.data, fileTypeHint: wav)
-            dingSound = try AVAudioPlayer(data: dingSoundAsset!.data, fileTypeHint: wav)
-            tickingSound = try AVAudioPlayer(data: tickingSoundAsset!.data, fileTypeHint: wav)
-        } catch {
-            fatalError("Error initializing players: \(error)")
-        }
+        windupSound = makePlayer(assetName: "windup", fileTypeHint: wav)
+        dingSound = makePlayer(assetName: "ding", fileTypeHint: wav)
+        rainSound = makePlayer(assetName: "rain")
 
         windupSound.prepareToPlay()
         dingSound.prepareToPlay()
-        tickingSound.numberOfLoops = -1
-        tickingSound.prepareToPlay()
+        rainSound.numberOfLoops = -1
+        rainSound.prepareToPlay()
 
         setVolume(windupSound, windupVolume)
         setVolume(dingSound, dingVolume)
-        setVolume(tickingSound, tickingVolume)
+        setVolume(rainSound, rainVolume)
     }
 
     func playWindup() {
@@ -58,11 +64,28 @@ class TBPlayer: ObservableObject {
         dingSound.play()
     }
 
-    func startTicking() {
-        tickingSound.play()
+    func startRain() {
+        guard !isRainPlaying else {
+            return
+        }
+        rainSound.play()
+        isRainPlaying = true
     }
 
-    func stopTicking() {
-        tickingSound.stop()
+    func stopRain() {
+        guard isRainPlaying else {
+            return
+        }
+        rainSound.stop()
+        rainSound.currentTime = 0
+        isRainPlaying = false
+    }
+
+    func toggleRain() {
+        if isRainPlaying {
+            stopRain()
+        } else {
+            startRain()
+        }
     }
 }

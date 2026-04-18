@@ -178,7 +178,6 @@ class TBTimer: ObservableObject {
     private func onWorkStart(context _: TBStateMachine.Context) {
         TBStatusItem.shared.setIcon(name: .work)
         player.playWindup()
-        player.startTicking()
         startTimer(seconds: workIntervalLength * 60)
     }
 
@@ -188,7 +187,6 @@ class TBTimer: ObservableObject {
     }
 
     private func onWorkEnd(context _: TBStateMachine.Context) {
-        player.stopTicking()
     }
 
     private func onRestStart(context _: TBStateMachine.Context) {

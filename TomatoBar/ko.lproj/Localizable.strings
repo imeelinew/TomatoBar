@@ -11,7 +11,7 @@
 "SettingsView.launchAtLogin.label" = "로그인 후 실행";
 "SoundsView.isWindupEnabled.label" = "Windup";
 "SoundsView.isDingEnabled.label" = "Ding";
-"SoundsView.isTickingEnabled.label" = "Ticking";
+"SoundsView.rainVolume.label" = "Rain";
 "TBPopoverView.start.label" = "시작";
 "TBPopoverView.stop.label" = "중지";
 "TBPopoverView.intervals.label" = "간격";
