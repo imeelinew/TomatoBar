@@ -79,6 +79,7 @@ class TBPlayer: ObservableObject {
         }
         rainSound.play()
         isRainPlaying = true
+        TBStatusItem.shared.setRainEnabled(true)
     }
 
     func stopRain() {
@@ -88,6 +89,7 @@ class TBPlayer: ObservableObject {
         rainSound.stop()
         rainSound.currentTime = 0
         isRainPlaying = false
+        TBStatusItem.shared.setRainEnabled(false)
     }
 
     func toggleRain() {

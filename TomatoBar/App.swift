@@ -28,6 +28,8 @@ struct TBApp: App {
 class TBStatusItem: NSObject, NSApplicationDelegate {
     private var popover = NSPopover()
     private var statusBarItem: NSStatusItem?
+    private var currentTitle: String?
+    private var isRainEnabled = false
     static var shared: TBStatusItem!
 
     func applicationDidFinishLaunching(_: Notification) {
@@ -46,21 +48,56 @@ class TBStatusItem: NSObject, NSApplicationDelegate {
         )
         statusBarItem?.button?.imagePosition = .imageLeft
         setIcon(name: .idle)
+        renderTitle()
         statusBarItem?.button?.action = #selector(TBStatusItem.togglePopover(_:))
     }
 
     func setTitle(title: String?) {
+        currentTitle = title
+        renderTitle()
+    }
+
+    func setRainEnabled(_ enabled: Bool) {
+        isRainEnabled = enabled
+        renderTitle()
+    }
+
+    private func rainIndicatorAttachment() -> NSAttributedString? {
+        let symbolConfig = NSImage.SymbolConfiguration(pointSize: 12, weight: .regular)
+        guard let symbol = NSImage(systemSymbolName: "cloud.rain.fill",
+                                   accessibilityDescription: "Rain enabled")?
+            .withSymbolConfiguration(symbolConfig) else {
+            return nil
+        }
+
+        symbol.isTemplate = true
+
+        let attachment = NSTextAttachment()
+        attachment.image = symbol
+        attachment.bounds = NSRect(x: 0, y: -1, width: 12, height: 12)
+        return NSAttributedString(attachment: attachment)
+    }
+
+    private func renderTitle() {
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineHeightMultiple = 0.9
         paragraphStyle.alignment = NSTextAlignment.center
+        let attributes: [NSAttributedString.Key: Any] = [
+            NSAttributedString.Key.font: digitFont,
+            NSAttributedString.Key.paragraphStyle: paragraphStyle
+        ]
 
-        let attributedTitle = NSAttributedString(
-            string: title != nil ? " \(title!)" : "",
-            attributes: [
-                NSAttributedString.Key.font: digitFont,
-                NSAttributedString.Key.paragraphStyle: paragraphStyle
-            ]
-        )
+        let attributedTitle = NSMutableAttributedString()
+        if let title = currentTitle {
+            attributedTitle.append(NSAttributedString(string: " \(title)", attributes: attributes))
+        }
+        if isRainEnabled {
+            attributedTitle.append(NSAttributedString(string: currentTitle != nil ? " " : "  ",
+                                                      attributes: attributes))
+            if let attachment = rainIndicatorAttachment() {
+                attributedTitle.append(attachment)
+            }
+        }
         statusBarItem?.button?.attributedTitle = attributedTitle
     }
 
