@@ -14,6 +14,7 @@ private func makePlayer(assetName: String, fileTypeHint: String? = nil) -> AVAud
 }
 
 class TBPlayer: ObservableObject {
+    private let rainVolumeMultiplier = 0.15
     private var windupSound: AVAudioPlayer
     private var dingSound: AVAudioPlayer
     private var rainSound: AVAudioPlayer
@@ -32,12 +33,20 @@ class TBPlayer: ObservableObject {
     }
     @AppStorage("rainVolume") var rainVolume: Double = 1.0 {
         didSet {
-            setVolume(rainSound, rainVolume)
+            setRainVolume()
         }
     }
 
     private func setVolume(_ sound: AVAudioPlayer, _ volume: Double) {
         sound.setVolume(Float(volume), fadeDuration: 0)
+    }
+
+    private func setRainVolume() {
+        /*
+         The bundled rain track is much louder than the event sounds.
+         Apply an app-level attenuation so the slider has a more usable range.
+         */
+        setVolume(rainSound, rainVolume * rainVolumeMultiplier)
     }
 
     init() {
@@ -53,7 +62,7 @@ class TBPlayer: ObservableObject {
 
         setVolume(windupSound, windupVolume)
         setVolume(dingSound, dingVolume)
-        setVolume(rainSound, rainVolume)
+        setRainVolume()
     }
 
     func playWindup() {
