@@ -1,0 +1,685 @@
+# TomatoBar Agent Project Map
+
+## DOC_META
+- purpose: 面向后续 agent 定制开发，不面向终端用户
+- style: 高密度 Markdown，优先稳定标题、路径、符号名、状态流、约束与联动点
+- source_of_truth:
+  - `/Users/eli/Dev/TomatoBar/TomatoBar/`
+  - `/Users/eli/Dev/TomatoBar/TomatoBar.xcodeproj/project.pbxproj`
+  - `/Users/eli/Dev/TomatoBar/TomatoBar.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`
+  - `/Users/eli/Dev/TomatoBar/.github/workflows/main.yml`
+- non_goals:
+  - 不提供 end-user 使用教程
+  - 不优化人类可读性
+  - 不推断未在仓库中出现的产品需求
+
+## PROJECT_META
+- app_type: macOS 菜单栏应用
+- UI_stack:
+  - SwiftUI: popover 内容视图、设置控件、音量滑块、分段切换
+  - AppKit: `NSStatusItem`、`NSPopover`、`NSApplicationDelegate`、`NSImage`
+- target_count: 1
+- target_name: `TomatoBar`
+- product_type: `com.apple.product-type.application`
+- bundle_id: `com.github.ivoronin.TomatoBar`
+- marketing_version: `3.0`
+- current_project_version: `1`
+- swift_version: `5.0`
+- repo_swift_version_file: `5.0`
+- deployment_target:
+  - project_build_configs: `12.3`
+  - target_build_configs: `11.0`
+  - 实际应用 target 以 target 配置为准
+- app_category: `public.app-category.productivity`
+- menu_bar_mode: `LSUIElement = YES`
+- sandbox: `com.apple.security.app-sandbox = true`
+- hardened_runtime: enabled
+- tests:
+  - 无 test target
+  - 无单元测试/集成测试目录
+- local_build_precondition:
+  - 当前机器只有 Command Line Tools
+  - `xcodebuild` 当前不可直接执行，错误为 active developer directory 指向 `/Library/Developer/CommandLineTools`
+  - 本轮文档不以“本机可成功构建”作为验收条件
+
+## REPO_FILE_INDEX
+- `README.md`: 面向用户的简介、下载、Homebrew 安装、日志路径、URL scheme 简介
+- `LICENSE`: MIT
+- `.gitignore`: 忽略 `xcuserdata`、`.DS_Store`
+- `.swift-version`: Swift 5.0
+- `.swiftlint.yml`: 仅关闭 `trailing_comma`、`opening_brace`
+- `export_options.plist`: 导出方式 `mac-application`
+- `screenshot.png`: README 展示截图
+- `.github/workflows/main.yml`: GitHub Actions 构建、签名、打包、发布/预发布
+- `TomatoBar.xcodeproj/project.pbxproj`: target、build setting、SwiftPM 依赖、资源与本地化编排
+- `TomatoBar.xcodeproj/project.xcworkspace/contents.xcworkspacedata`: workspace 根引用
+- `TomatoBar.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist`: Xcode workspace 检查元数据
+- `TomatoBar.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`: SwiftPM pin 版本与 revision
+- `TomatoBar/App.swift`: `@main` 入口、状态栏宿主、popover 初始化、app start 日志
+- `TomatoBar/State.swift`: 状态机类型别名、状态与事件枚举
+- `TomatoBar/Timer.swift`: 核心业务状态机、计时器生命周期、快捷键、URL scheme、副作用总线
+- `TomatoBar/View.swift`: popover UI、设置/时长/声音子视图、快捷键录制器
+- `TomatoBar/Player.swift`: 音效资源加载、音量持久化、播放控制
+- `TomatoBar/Notifications.swift`: 通知权限申请、category/action 注册、点击回调转发
+- `TomatoBar/Log.swift`: JSONL 日志写入
+- `TomatoBar/Info.plist`: 自定义 URL scheme `tomatobar`
+- `TomatoBar/TomatoBar.entitlements`: app sandbox
+- `TomatoBar/en.lproj/Localizable.strings`: 英文本地化
+- `TomatoBar/zh-Hans.lproj/Localizable.strings`: 简体中文本地化
+- `TomatoBar/ko.lproj/Localizable.strings`: 韩文本地化
+- `TomatoBar/Assets.xcassets`: app icon、状态栏 icon、AccentColor、3 个 wav 数据集
+- `Icons/README.md`: 图标来源说明
+- `Icons/convert.sh`: 生成 app icon 和菜单栏 icon 的 ImageMagick 脚本
+- `Icons/*.png`: 原始图标素材，不参与 app bundle 运行时加载
+
+## BUILD_AND_RELEASE
+- Xcode target:
+  - sources: `App.swift` `Log.swift` `View.swift` `State.swift` `Timer.swift` `Player.swift` `Notifications.swift`
+  - resources: `Assets.xcassets` `Localizable.strings`
+  - frameworks/products: `LaunchAtLogin` `KeyboardShortcuts` `SwiftState`
+  - build phase: `Copy “Launch at Login Helper”`
+- signing/runtime:
+  - `CODE_SIGN_STYLE = Automatic` in project
+  - CI build 时覆盖为 `CODE_SIGN_STYLE=Manual`
+  - `ENABLE_HARDENED_RUNTIME = YES`
+  - `CODE_SIGN_ENTITLEMENTS = TomatoBar/TomatoBar.entitlements`
+- release workflow:
+  - 触发: 任意 branch push / `v*` tag push
+  - runner: `macos-15`
+  - branch push:
+    - 先删除旧 `prerelease`
+    - `git describe --tags` 生成 version
+    - 构建 Release app
+    - zip `TomatoBar.app`
+    - 发布为 tag `prerelease`
+  - tag push:
+    - `git describe --tags --match 'v*'`
+    - 构建 Release app
+    - 创建正式 release
+- CI secret dependencies:
+  - `CODESIGN_CERT_BASE64`
+  - `CODESIGN_CERT_PASSWORD`
+  - `CODESIGN_CERT_PEM_BASE64`
+- local verification caveat:
+  - 仓库可由 CI 构建
+  - 当前本机环境缺少完整 Xcode，不能直接复现 CI 构建
+
+## SWIFTPM_DEPENDENCIES
+- `LaunchAtLogin`
+  - pinned: `5.0.2`
+  - repo: `https://github.com/sindresorhus/LaunchAtLogin`
+  - entrypoints:
+    - `LaunchAtLogin.migrateIfNeeded()` in `App.swift`
+    - `LaunchAtLogin.observable` in `View.swift`
+  - role:
+    - 提供登录自启动开关与旧版本迁移
+  - replacement_risk:
+    - 需同时替换 app 启动迁移逻辑和 UI 绑定对象
+    - build phase 中 helper copy 脚本依赖该包资源
+- `KeyboardShortcuts`
+  - pinned: `2.4.0`
+  - repo: `https://github.com/sindresorhus/KeyboardShortcuts`
+  - entrypoints:
+    - `KeyboardShortcuts.Recorder(for: .startStopTimer)` in `View.swift`
+    - `KeyboardShortcuts.onKeyUp(for: .startStopTimer, action: startStop)` in `Timer.swift`
+  - role:
+    - 记录和触发全局快捷键
+  - replacement_risk:
+    - 需同步改 UI 录制器和业务回调注册
+- `SwiftState`
+  - pinned: branch `swift/5.0`, revision `887e75b96da6be36a062e1b0ef832c32a803348b`
+  - repo: `https://github.com/ReactKit/SwiftState`
+  - entrypoints:
+    - `TBStateMachine` typealias
+    - 全部状态转移和 handler 注册都在 `Timer.swift`
+  - role:
+    - 承担项目核心状态机
+  - replacement_risk:
+    - 当前业务 deeply coupled 到 transition handler 顺序和 route 条件闭包
+    - 替换状态机库时要完整重写 `Timer.swift`
+
+## RUNTIME_ENTRYPOINT
+- process start:
+  - `TBApp.init()`
+  - `TBStatusItem.shared = appDelegate`
+  - `LaunchAtLogin.migrateIfNeeded()`
+  - `logger.append(event: TBLogEventAppStart())`
+- application launch:
+  - `TBStatusItem.applicationDidFinishLaunching`
+  - 构建 `TBPopoverView`
+  - 以 `NSHostingView(rootView: view)` 嵌入 SwiftUI
+  - 创建 `NSStatusBar.system.statusItem(withLength: .variableLength)`
+  - 初始 icon 设为 `.idle`
+  - status item button action 绑定 `togglePopover`
+- popover/view model:
+  - `TBPopoverView` 自持有 `@ObservedObject var timer = TBTimer()`
+  - `TBTimer` 初始化即注册所有副作用
+- side effects installed by `TBTimer.init()`:
+  - 状态机 routes
+  - 状态机 transition handlers
+  - error handler -> `fatalError`
+  - `DateComponentsFormatter`
+  - `KeyboardShortcuts.onKeyUp`
+  - `TBNotificationCenter.setActionHandler`
+  - `NSAppleEventManager` URL scheme handler
+
+## CORE_RUNTIME_GRAPH
+`TBApp` -> `TBStatusItem` -> `TBPopoverView` -> `TBTimer`
+
+`TBTimer` owns:
+- `stateMachine`
+- `player`
+- `notificationCenter`
+- `finishTime`
+- `timerFormatter`
+- `timer: DispatchSourceTimer?`
+- `consecutiveWorkIntervals`
+
+`TBStatusItem.shared` is globally consumed by:
+- `TBTimer.updateTimeLeft()`
+- `TBTimer.onWorkStart()`
+- `TBTimer.onRestStart()`
+- `TBTimer.onIdleStart()`
+- `TBPopoverView` start/stop button close action
+
+`logger` is global singleton consumed by:
+- `TBApp.init()` -> `TBLogEventAppStart`
+- `TBTimer` transition any-handler -> `TBLogEventTransition`
+
+## STATE_MACHINE_SPEC
+- states:
+  - `idle`
+  - `work`
+  - `rest`
+- events:
+  - `startStop`
+  - `timerFired`
+  - `skipRest`
+- routes:
+  - `startStop`: `idle -> work`
+  - `startStop`: `work -> idle`
+  - `startStop`: `rest -> idle`
+  - `timerFired`: `work -> rest`
+  - `timerFired`: `rest -> idle` if `stopAfterBreak == true`
+  - `timerFired`: `rest -> work` if `stopAfterBreak == false`
+  - `skipRest`: `rest -> work`
+- handler ordering / semantics:
+  - `any -> work`: `onWorkStart`
+  - `work -> rest` order `0`: `onWorkFinish`
+  - `work -> any` order `1`: `onWorkEnd`
+  - `any -> rest`: `onRestStart`
+  - `rest -> work`: `onRestFinish`
+  - `any -> idle`: `onIdleStart`
+  - `any -> any`: append transition log
+- transition semantics:
+  - `idle -> work`
+    - set icon `.work`
+    - play windup
+    - start ticking loop
+    - start work timer
+  - `work -> rest`
+    - increment `consecutiveWorkIntervals`
+    - play ding
+    - stop ticking loop
+    - determine short vs long break
+    - send notification
+    - set rest icon
+    - start rest timer
+  - `rest -> work` via `timerFired`
+    - send “break over” notification
+    - set icon `.work`
+    - play windup
+    - start ticking loop
+    - start work timer
+  - `rest -> work` via `skipRest`
+    - `onRestFinish` early-return, no “break over” notification
+    - 其余与进入 work 相同
+  - `work -> idle`
+    - stop ticking loop
+    - cancel timer
+    - set icon `.idle`
+    - reset consecutive counter
+  - `rest -> idle`
+    - cancel timer
+    - set icon `.idle`
+    - reset consecutive counter
+- hidden logic:
+  - `consecutiveWorkIntervals >= workIntervalsInSet` 时下一个 rest 为 long rest
+  - 进入 long rest 后立即将 `consecutiveWorkIntervals = 0`
+  - `overrunTimeLimit` 默认 `-60` 秒，用于机器睡眠恢复后容忍 timer miss
+  - `timeLeft <= 0` 且 `timeLeft < overrunTimeLimit` 时不走 `timerFired`，而是强制发送 `startStop`，最终转入 `idle`
+
+## TIMER_LIFECYCLE
+- start path:
+  - `startTimer(seconds:)`
+  - `finishTime = now + seconds`
+  - 新建 label 为 `"Timer"` 的串行队列
+  - `DispatchSource.makeTimerSource(flags: .strict, queue: queue)`
+  - `schedule(deadline: .now(), repeating: .seconds(1), leeway: .never)`
+  - event handler -> `onTimerTick`
+  - cancel handler -> `onTimerCancel`
+  - `resume()`
+- tick path:
+  - 在后台队列触发
+  - 通过 `DispatchQueue.main.async` 切回主线程
+  - `updateTimeLeft()`
+  - 计算 `finishTime.timeIntervalSince(Date())`
+  - 触发 `timerFired` 或 `startStop`
+- stop path:
+  - `stopTimer()` 直接 `timer!.cancel()`
+  - 然后 `timer = nil`
+- menu bar title path:
+  - `updateTimeLeft()` 生成 `mm:ss`
+  - `timer != nil && showTimerInMenuBar == true` 时将标题写入状态栏
+  - 否则清空标题，仅保留图标
+
+## PERSISTENCE_AND_SETTINGS
+- backing mechanism: `@AppStorage`
+- visible_settings_in_UI:
+  - key: `workIntervalLength`
+    - default: `25`
+    - type: `Int`
+    - UI: `IntervalsView` stepper `1...60`
+    - runtime_read: `onWorkStart`
+  - key: `shortRestIntervalLength`
+    - default: `5`
+    - type: `Int`
+    - UI: `IntervalsView` stepper `1...60`
+    - runtime_read: `onRestStart`
+  - key: `longRestIntervalLength`
+    - default: `15`
+    - type: `Int`
+    - UI: `IntervalsView` stepper `1...60`
+    - runtime_read: `onRestStart`
+  - key: `workIntervalsInSet`
+    - default: `4`
+    - type: `Int`
+    - UI: `IntervalsView` stepper `1...10`
+    - runtime_read: `onRestStart`
+  - key: `stopAfterBreak`
+    - default: `false`
+    - type: `Bool`
+    - UI: `SettingsView` toggle
+    - runtime_read: rest 状态 `timerFired` 条件闭包
+  - key: `showTimerInMenuBar`
+    - default: `true`
+    - type: `Bool`
+    - UI: `SettingsView` toggle
+    - runtime_read: `updateTimeLeft()`
+  - key: `windupVolume`
+    - default: `1.0`
+    - type: `Double`
+    - UI: `SoundsView`
+    - runtime_read: `TBPlayer.didSet` + init
+  - key: `dingVolume`
+    - default: `1.0`
+    - type: `Double`
+    - UI: `SoundsView`
+    - runtime_read: `TBPlayer.didSet` + init
+  - key: `tickingVolume`
+    - default: `1.0`
+    - type: `Double`
+    - UI: `SoundsView`
+    - runtime_read: `TBPlayer.didSet` + init
+- hidden_setting:
+  - key: `overrunTimeLimit`
+  - default: `-60.0`
+  - type: `Double`
+  - UI: none
+  - runtime_read: `onTimerTick`
+- non_AppStorage_settings:
+  - login item enabled state 由 `LaunchAtLogin.observable.isEnabled` 承担，不是项目自己定义的 key
+  - global shortcut 持久化由 `KeyboardShortcuts` 库管理，不是项目自己定义的 `@AppStorage`
+
+## EXTERNAL_INTERFACES
+- URL scheme:
+  - declared in `Info.plist`
+  - scheme: `tomatobar`
+  - host/command supported:
+    - `startStop`
+  - command example:
+    - `open tomatobar://startStop`
+  - unsupported host 行为:
+    - `print("url handling error: unknown command ...")`
+- notifications:
+  - authorization requested: `.alert`
+  - categories:
+    - `restStarted`
+    - `restFinished`
+  - actions:
+    - `skipRest`
+  - UI-visible action title localized key:
+    - `TBTimer.onRestStart.skip.title`
+  - action handling:
+    - notification center delegate -> `TBNotificationCenter.handler`
+    - `TBTimer.onNotificationAction`
+    - 仅当当前 state 为 `.rest` 才执行 `skipRest()`
+- logging:
+  - file path:
+    - sandbox runtime: `~/Library/Containers/com.github.ivoronin.TomatoBar/Data/Library/Caches/TomatoBar.log`
+    - implementation: 当前 app sandbox 的 `.cachesDirectory` 下 `TomatoBar.log`
+  - format: 每行一个 JSON object
+  - event types:
+    - `appstart`
+    - `transition`
+  - date encoding: Unix seconds
+  - encoder formatting: `.sortedKeys`
+  - `transition` fields:
+    - `event`
+    - `fromState`
+    - `toState`
+    - `timestamp`
+    - `type`
+- sound asset interface:
+  - asset names:
+    - `windup`
+    - `ding`
+    - `ticking`
+  - asset storage: `Assets.xcassets/*.dataset/*.wav`
+- menu bar icon interface:
+  - image names:
+    - `BarIconIdle`
+    - `BarIconWork`
+    - `BarIconShortRest`
+    - `BarIconLongRest`
+  - all icon sets have `template-rendering-intent = template`
+  - icon switching authority: only `TBStatusItem.setIcon(name:)` callers in `TBTimer`
+
+## UI_STRUCTURE
+- root_view: `TBPopoverView`
+- top_action_button:
+  - click action: `timer.startStop()` then close popover
+  - label logic:
+    - `timer.timer == nil` -> localized `Start`
+    - `timer.timer != nil && buttonHovered == false` -> `timer.timeLeftString`
+    - `timer.timer != nil && buttonHovered == true` -> localized `Stop`
+  - style:
+    - `controlSize(.large)`
+    - `.keyboardShortcut(.defaultAction)`
+    - forced white text to bypass Graphite accent blank-label issue
+- segment_picker:
+  - enum `ChildView`: `intervals` `settings` `sounds`
+  - displayed inside `GroupBox`
+- intervals_tab:
+  - 4 个 Stepper
+  - 调整 work / short rest / long rest / intervals per set
+- settings_tab:
+  - shortcut recorder
+  - `stopAfterBreak`
+  - `showTimerInMenuBar`
+  - `LaunchAtLogin` toggle
+- sounds_tab:
+  - `windup` / `ding` / `ticking` 三个音量 slider
+  - 双击 slider 重置为 `1.0`
+- footer_actions:
+  - About: `NSApp.activate` + `orderFrontStandardAboutPanel()`
+  - Quit: `NSApplication.shared.terminate(self)`
+- no_window_model:
+  - app 只有 status item + transient popover
+  - `Settings {}` scene 空实现，不提供常规设置窗口
+
+## LOCALIZATION_SURFACE
+- languages:
+  - `en`
+  - `zh-Hans`
+  - `ko`
+- localized domains:
+  - Intervals labels/help
+  - Settings labels
+  - Sounds labels
+  - Popover labels
+  - 通知标题/正文/动作文案
+- non_localized_strings still present in code:
+  - URL handling errors printed with raw English strings
+  - debug geometry print
+  - 部分 README/CI/脚本文本
+- adding_new_user_facing_copy requires:
+  - 修改对应 Swift file
+  - 更新 3 份 `Localizable.strings`
+  - 确认 key 命名与现有 `Type.method.scope.label/body/help` 风格一致
+
+## ASSET_SURFACE
+- `AccentColor.colorset`: `systemRedColor`
+- `AppIcon.appiconset`: 完整 macOS icon 尺寸集
+- `BarIcon*.imageset`:
+  - idle/work/shortRest/longRest 各 1 套
+  - 1x/2x/3x
+  - template rendering
+- `*.dataset`:
+  - `windup.wav`
+  - `ding.wav`
+  - `ticking.wav`
+- icon source pipeline:
+  - raw source files located in `/Users/eli/Dev/TomatoBar/Icons/`
+  - `Icons/convert.sh appicon` 生成 app icon
+  - `Icons/convert.sh baricon` 生成状态栏 icon
+  - 依赖 ImageMagick `convert`
+  - `work/short rest/long rest` 图标文字覆写分别为 `W/R/L`
+
+## SYMBOL_INDEX_BY_FILE
+- `App.swift`
+  - `TBApp`
+  - `TBStatusItem`
+  - `NSImage.Name.idle/work/shortRest/longRest`
+  - `digitFont`
+- `State.swift`
+  - `TBStateMachine`
+  - `TBStateMachineEvents`
+  - `TBStateMachineStates`
+- `Timer.swift`
+  - `TBTimer`
+  - `handleGetURLEvent`
+  - `startStop`
+  - `skipRest`
+  - `updateTimeLeft`
+  - `startTimer`
+  - `stopTimer`
+  - `onTimerTick`
+  - `onTimerCancel`
+  - `onNotificationAction`
+  - `onWorkStart`
+  - `onWorkFinish`
+  - `onWorkEnd`
+  - `onRestStart`
+  - `onRestFinish`
+  - `onIdleStart`
+- `View.swift`
+  - `KeyboardShortcuts.Name.startStopTimer`
+  - `IntervalsView`
+  - `SettingsView`
+  - `VolumeSlider`
+  - `SoundsView`
+  - `ChildView`
+  - `TBPopoverView`
+- `Notifications.swift`
+  - `TBNotification.Category`
+  - `TBNotification.Action`
+  - `TBNotificationCenter`
+- `Player.swift`
+  - `TBPlayer`
+  - `playWindup`
+  - `playDing`
+  - `startTicking`
+  - `stopTicking`
+- `Log.swift`
+  - `TBLogEvent`
+  - `TBLogEventAppStart`
+  - `TBLogEventTransition`
+  - `logger`
+  - `TBLogger`
+
+## BEHAVIORAL_CONSTRAINTS
+- singleton coupling:
+  - `TBStatusItem.shared` 必须在 `TBTimer` 之前可用，否则状态栏标题/图标调用将失效
+  - `logger` 为全局单例
+- no_dependency_injection:
+  - `TBTimer` 直接 new `TBPlayer`、`TBNotificationCenter`
+  - `TBPopoverView` 直接构造 `TBTimer`
+  - 无 mock seam
+- force_unwrap / implicit unwrap hotspots:
+  - `finishTime: Date!`
+  - `timerFormatter.string(... )!`
+  - `timer!.cancel()`
+  - `NSDataAsset(name: ...)!`
+  - `TBStatusItem.shared` 隐式解包单例
+- threading:
+  - timer event 在后台队列
+  - published property 更新强制切回主线程
+- state machine error policy:
+  - 非法上下文直接 `fatalError`
+- sandbox/logging:
+  - log file 必须写到 sandbox caches，不是仓库内文件
+
+## KNOWN_RISKS_AND_CODE_SMELLS
+- `TBPopoverView` 每次创建都会 new 一个 `TBTimer`
+  - 当前设计假设 popover 根视图只创建一次
+  - 若未来改为可重建/多窗口，会重复注册快捷键和 URL handler
+- `updateTimeLeft()` 依赖 `finishTime` 已初始化
+  - `showTimerInMenuBar` toggle 的 `.onChange` 可在未启动 timer 前调用该方法
+  - 存在因 `finishTime == nil` 触发崩溃的风险
+- `stopTimer()` 强制解包 `timer`
+  - 任何异常状态迁移到 idle 且 `timer == nil` 都会崩
+- timer lifecycle 存在隐性耦合
+  - `startTimer()` 不会先 cancel 已存在 timer
+  - `rest -> work` 与 `work -> rest` 路径没有显式 stop 旧 `DispatchSourceTimer`
+  - 当前实现依赖覆盖 `finishTime` 和 `timer` 引用继续运行，存在重复 source/资源泄漏风险
+- 状态与 UI 耦合紧
+  - `TBTimer` 直接操纵菜单栏 icon/title 与通知/音频
+  - 业务逻辑难以无 UI 地复用
+- 无测试
+  - 状态机、睡眠恢复、URL scheme、通知动作、日志格式都没有自动化回归保护
+- `SwiftState` 固定在 branch，不是 semver release
+  - 未来依赖可用性与 reproducibility 风险高于 exactVersion
+
+## CHANGE_ENTRYPOINTS
+- 改工作流/番茄钟规则:
+  - 主入口: `Timer.swift`
+  - 同步关注:
+    - `State.swift` 状态/事件枚举
+    - `View.swift` 是否需要暴露新配置
+    - `Localizable.strings` 是否新增文案
+    - `Log.swift` 是否扩展日志事件
+- 加统计/历史分析:
+  - 主入口: `Log.swift`、`Timer.swift`
+  - 优先方案:
+    - 继续扩展 JSONL event schema
+    - 复用已有 transition logging
+  - 同步关注:
+    - README 的 event log 说明
+    - 沙盒路径限制
+- 加新设置项:
+  - 主入口: `Timer.swift` 或 `Player.swift` 中新增 `@AppStorage`
+  - UI 落点: `IntervalsView` / `SettingsView` / `SoundsView`
+  - 同步关注:
+    - 默认值
+    - 本地化
+    - 运行时读取点
+- 改通知:
+  - 主入口: `Notifications.swift` + `Timer.swift`
+  - 同步关注:
+    - category/action 注册
+    - action handler 分支
+    - 通知文案 key
+- 改菜单栏展示:
+  - 主入口: `App.swift` 中 `TBStatusItem`
+  - 同步关注:
+    - `Timer.updateTimeLeft()`
+    - icon 名称和 asset
+    - title 格式化/字体
+- 改音效:
+  - 主入口: `Player.swift`
+  - 同步关注:
+    - `Assets.xcassets/*.dataset`
+    - `SoundsView`
+    - 默认音量 key
+- 改自动启动:
+  - 主入口: `View.swift` 与 `App.swift`
+  - 同步关注:
+    - `LaunchAtLogin` 包版本/替换
+    - build phase helper copy
+- 加新外部命令:
+  - 主入口: `Info.plist` + `Timer.handleGetURLEvent`
+  - 当前只支持 host=`startStop`
+  - 若要新增 `skipRest`/`start`/`stop` 之类命令，需要先定义幂等语义
+
+## MODIFICATION_GUIDE
+- safe_first_targets:
+  - 纯文案: `Localizable.strings`
+  - 纯资源: `Assets.xcassets` / `Icons/`
+  - 纯 UI 布局: `View.swift`
+- medium_risk_targets:
+  - `Player.swift`
+  - `Notifications.swift`
+  - `App.swift` 中 status item/popup wiring
+- high_risk_targets:
+  - `Timer.swift`
+  - `State.swift`
+  - `project.pbxproj`
+- when_modifying_`Timer.swift`, always reevaluate:
+  - route condition correctness
+  - handler ordering
+  - timer cancellation semantics
+  - status bar side effects
+  - notification side effects
+  - log event completeness
+
+## CURRENT_STABLE_CONTRACTS
+- URL: `tomatobar://startStop`
+- log event types:
+  - `appstart`
+  - `transition`
+- public state vocabulary:
+  - `idle`
+  - `work`
+  - `rest`
+- public event vocabulary:
+  - `startStop`
+  - `timerFired`
+  - `skipRest`
+- visible setting defaults:
+  - `workIntervalLength = 25`
+  - `shortRestIntervalLength = 5`
+  - `longRestIntervalLength = 15`
+  - `workIntervalsInSet = 4`
+  - `stopAfterBreak = false`
+  - `showTimerInMenuBar = true`
+  - `windupVolume = 1.0`
+  - `dingVolume = 1.0`
+  - `tickingVolume = 1.0`
+- supported languages:
+  - `en`
+  - `zh-Hans`
+  - `ko`
+
+## AGENT_CHECKLIST_FOR_NEXT_CUSTOMIZATION
+- 先判断需求落在:
+  - 计时规则
+  - UI/交互
+  - 资源/音效
+  - 通知
+  - 日志/统计
+  - 构建/发布
+- 若需求触及 `Timer.swift`:
+  - 先画出新状态图
+  - 再对照现有 handler 顺序
+  - 最后确认是否需要新的 `@AppStorage` / 文案 / 日志 event
+- 若需求触及用户可见文案:
+  - 同步改 3 份 `Localizable.strings`
+- 若需求触及图标/音频:
+  - 同步改 assets
+  - 若变更原始素材，也要考虑 `Icons/convert.sh`
+- 若需求触及发布:
+  - 同步改 workflow、签名需求、`project.pbxproj`
+- 若需求需要验证构建:
+  - 先确认本机是否切换到完整 Xcode developer directory
+
+## DOC_COMPLETENESS_CHECK
+- covered_repo_tracked_source_files: yes
+- covered_key_config_files: yes
+- listed_all_`@AppStorage`: yes
+- listed_notification_actions: yes
+- listed_URL_commands: yes
+- listed_log_types: yes
+- listed_dependencies: yes
+- captured_no_test_target: yes
+- captured_local_build_limitation: yes
