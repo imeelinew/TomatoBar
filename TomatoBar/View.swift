@@ -233,13 +233,13 @@ private struct RainToggleButton: View {
 }
 
 private enum ChildView {
-    case intervals, settings, sounds
+    case sounds, intervals, settings
 }
 
 struct TBPopoverView: View {
     @ObservedObject var timer = TBTimer()
     @State private var startButtonHovered = false
-    @State private var activeChildView = ChildView.intervals
+    @State private var activeChildView = ChildView.sounds
 
     private var startLabel = NSLocalizedString("TBPopoverView.start.label", comment: "Start label")
     private var stopLabel = NSLocalizedString("TBPopoverView.stop.label", comment: "Stop label")
@@ -269,12 +269,12 @@ struct TBPopoverView: View {
             RainToggleButton().environmentObject(timer.player)
 
             Picker("", selection: $activeChildView) {
+                Text(NSLocalizedString("TBPopoverView.sounds.label",
+                                       comment: "Sounds label")).tag(ChildView.sounds)
                 Text(NSLocalizedString("TBPopoverView.intervals.label",
                                        comment: "Intervals label")).tag(ChildView.intervals)
                 Text(NSLocalizedString("TBPopoverView.settings.label",
                                        comment: "Settings label")).tag(ChildView.settings)
-                Text(NSLocalizedString("TBPopoverView.sounds.label",
-                                       comment: "Sounds label")).tag(ChildView.sounds)
             }
             .labelsHidden()
             .frame(maxWidth: .infinity)
