@@ -14,6 +14,8 @@
 "SoundsView.rainVolume.label" = "雨声";
 "TBPopoverView.start.label" = "开始";
 "TBPopoverView.stop.label" = "停止";
+"TBPopoverView.rainStart.label" = "开启雨声";
+"TBPopoverView.rainStop.label" = "关闭雨声";
 "TBPopoverView.intervals.label" = "时长";
 "TBPopoverView.settings.label" = "设置";
 "TBPopoverView.sounds.label" = "声音";

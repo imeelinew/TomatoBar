@@ -125,6 +125,49 @@ private struct SoundsView: View {
     }
 }
 
+private struct FullWidthButtonLabel: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .foregroundColor(Color.white)
+            .font(.system(.body).monospacedDigit())
+            .frame(maxWidth: .infinity)
+    }
+}
+
+private struct FilledActionButtonStyle: ButtonStyle {
+    let backgroundColor: Color
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(backgroundColor.opacity(configuration.isPressed ? 0.75 : 1.0))
+            )
+    }
+}
+
+private struct RainToggleButton: View {
+    @EnvironmentObject var player: TBPlayer
+
+    private var rainStartLabel = NSLocalizedString("TBPopoverView.rainStart.label",
+                                                   comment: "Start rain label")
+    private var rainStopLabel = NSLocalizedString("TBPopoverView.rainStop.label",
+                                                  comment: "Stop rain label")
+
+    var body: some View {
+        Button {
+            player.toggleRain()
+        } label: {
+            FullWidthButtonLabel(text: player.isRainPlaying ? rainStopLabel : rainStartLabel)
+        }
+        .controlSize(.large)
+        .buttonStyle(FilledActionButtonStyle(backgroundColor: .blue))
+    }
+}
+
 private enum ChildView {
     case intervals, settings, sounds
 }
@@ -143,23 +186,20 @@ struct TBPopoverView: View {
                 timer.startStop()
                 TBStatusItem.shared.closePopover(nil)
             } label: {
-                Text(timer.timer != nil ?
-                     (buttonHovered ? stopLabel : timer.timeLeftString) :
-                        startLabel)
-                    /*
-                      When appearance is set to "Dark" and accent color is set to "Graphite"
-                      "defaultAction" button label's color is set to the same color as the
-                      button, making the button look blank. #24
-                     */
-                    .foregroundColor(Color.white)
-                    .font(.system(.body).monospacedDigit())
-                    .frame(maxWidth: .infinity)
+                FullWidthButtonLabel(
+                    text: timer.timer != nil ?
+                        (buttonHovered ? stopLabel : timer.timeLeftString) :
+                        startLabel
+                )
             }
             .onHover { over in
                 buttonHovered = over
             }
             .controlSize(.large)
+            .buttonStyle(FilledActionButtonStyle(backgroundColor: .accentColor))
             .keyboardShortcut(.defaultAction)
+
+            RainToggleButton().environmentObject(timer.player)
 
             Picker("", selection: $activeChildView) {
                 Text(NSLocalizedString("TBPopoverView.intervals.label",
