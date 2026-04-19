@@ -90,6 +90,7 @@ private struct SettingsView: View {
 }
 
 private struct VolumeSlider: View {
+    @Environment(\.colorScheme) private var colorScheme
     @Binding var volume: Double
     private let volumeRange = 0.0...2.0
     private let step = 0.1
@@ -103,18 +104,30 @@ private struct VolumeSlider: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 10, weight: .bold))
-                .foregroundColor(Color.black.opacity(0.68))
+                .foregroundColor(buttonForegroundColor)
                 .frame(width: 24, height: 24)
                 .background(
                     Circle()
-                        .fill(Color.black.opacity(0.08))
+                        .fill(buttonBackgroundColor)
                 )
                 .overlay(
                     Circle()
-                        .stroke(Color.black.opacity(0.10), lineWidth: 1)
+                        .stroke(buttonStrokeColor, lineWidth: 1)
                 )
         }
         .buttonStyle(.plain)
+    }
+
+    private var buttonForegroundColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.82) : Color.black.opacity(0.68)
+    }
+
+    private var buttonBackgroundColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.10) : Color.black.opacity(0.08)
+    }
+
+    private var buttonStrokeColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.10)
     }
 
     var body: some View {
