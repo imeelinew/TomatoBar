@@ -103,15 +103,15 @@ private struct VolumeSlider: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 10, weight: .bold))
-                .foregroundColor(.primary)
+                .foregroundColor(Color.black.opacity(0.68))
                 .frame(width: 24, height: 24)
                 .background(
                     Circle()
-                        .fill(Color.white.opacity(0.12))
+                        .fill(Color.black.opacity(0.08))
                 )
                 .overlay(
                     Circle()
-                        .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                        .stroke(Color.black.opacity(0.10), lineWidth: 1)
                 )
         }
         .buttonStyle(.plain)
