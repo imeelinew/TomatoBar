@@ -76,6 +76,9 @@ class TBTimer: ObservableObject {
         timerFormatter.zeroFormattingBehavior = .pad
 
         KeyboardShortcuts.onKeyUp(for: .startStopTimer, action: startStop)
+        KeyboardShortcuts.onKeyUp(for: .toggleRain) { [weak self] in
+            self?.player.toggleRain()
+        }
         notificationCenter.setActionHandler(handler: onNotificationAction)
 
         let aem: NSAppleEventManager = NSAppleEventManager.shared()

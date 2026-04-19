@@ -4,6 +4,8 @@ import SwiftUI
 
 extension KeyboardShortcuts.Name {
     static let startStopTimer = Self("startStopTimer")
+    static let toggleRain = Self("toggleRain",
+                                 default: .init(.n, modifiers: [.option]))
 }
 
 private struct IntervalsView: View {
