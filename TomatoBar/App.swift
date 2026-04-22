@@ -9,7 +9,7 @@ extension NSImage.Name {
 }
 
 private let digitFont = NSFont.monospacedDigitSystemFont(ofSize: 0, weight: .regular)
-private let rainIndicatorSize: CGFloat = 13
+private let rainIndicatorSize: CGFloat = 14
 private let rainIndicatorBaselineOffset: CGFloat = -3
 private let rainIndicatorSpacingWithoutTitle = "    "
 private let rainIndicatorSpacingWithTitle = "  "
