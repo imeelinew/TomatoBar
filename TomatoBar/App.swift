@@ -9,6 +9,10 @@ extension NSImage.Name {
 }
 
 private let digitFont = NSFont.monospacedDigitSystemFont(ofSize: 0, weight: .regular)
+private let rainIndicatorSize: CGFloat = 13
+private let rainIndicatorBaselineOffset: CGFloat = -2
+private let rainIndicatorSpacingWithoutTitle = " "
+private let rainIndicatorSpacingWithTitle = " "
 
 @main
 struct TBApp: App {
@@ -63,7 +67,8 @@ class TBStatusItem: NSObject, NSApplicationDelegate {
     }
 
     private func rainIndicatorAttachment() -> NSAttributedString? {
-        let symbolConfig = NSImage.SymbolConfiguration(pointSize: 12, weight: .regular)
+        let symbolConfig = NSImage.SymbolConfiguration(pointSize: rainIndicatorSize,
+                                                       weight: .regular)
         guard let symbol = NSImage(systemSymbolName: "cloud.rain.fill",
                                    accessibilityDescription: "Rain enabled")?
             .withSymbolConfiguration(symbolConfig) else {
@@ -74,7 +79,10 @@ class TBStatusItem: NSObject, NSApplicationDelegate {
 
         let attachment = NSTextAttachment()
         attachment.image = symbol
-        attachment.bounds = NSRect(x: 0, y: -1, width: 12, height: 12)
+        attachment.bounds = NSRect(x: 0,
+                                   y: rainIndicatorBaselineOffset,
+                                   width: rainIndicatorSize,
+                                   height: rainIndicatorSize)
         return NSAttributedString(attachment: attachment)
     }
 
@@ -92,7 +100,10 @@ class TBStatusItem: NSObject, NSApplicationDelegate {
             attributedTitle.append(NSAttributedString(string: " \(title)", attributes: attributes))
         }
         if isRainEnabled {
-            attributedTitle.append(NSAttributedString(string: currentTitle != nil ? " " : "  ",
+            let spacing = currentTitle != nil ?
+                rainIndicatorSpacingWithTitle :
+                rainIndicatorSpacingWithoutTitle
+            attributedTitle.append(NSAttributedString(string: spacing,
                                                       attributes: attributes))
             if let attachment = rainIndicatorAttachment() {
                 attributedTitle.append(attachment)
