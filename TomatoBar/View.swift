@@ -8,44 +8,82 @@ extension KeyboardShortcuts.Name {
                                  default: .init(.n, modifiers: [.option]))
 }
 
+private struct HoverRow<Content: View>: View {
+    @State private var isHovered = false
+    let verticalPadding: CGFloat
+    let content: Content
+
+    init(verticalPadding: CGFloat = 4, @ViewBuilder content: () -> Content) {
+        self.verticalPadding = verticalPadding
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .padding(.horizontal, 8)
+            .padding(.vertical, verticalPadding)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.primary.opacity(isHovered ? 0.06 : 0))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(isHovered ? 0.08 : 0), lineWidth: 1)
+            )
+            .scaleEffect(isHovered ? 1.01 : 1)
+            .animation(.easeOut(duration: 0.12), value: isHovered)
+            .onHover { over in
+                isHovered = over
+            }
+    }
+}
+
 private struct IntervalsView: View {
     @EnvironmentObject var timer: TBTimer
     private var minStr = NSLocalizedString("IntervalsView.min", comment: "min")
 
     var body: some View {
         VStack {
-            Stepper(value: $timer.workIntervalLength, in: 1 ... 60) {
-                HStack {
-                    Text(NSLocalizedString("IntervalsView.workIntervalLength.label",
-                                           comment: "Work interval label"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(String.localizedStringWithFormat(minStr, timer.workIntervalLength))
+            HoverRow {
+                Stepper(value: $timer.workIntervalLength, in: 1 ... 60) {
+                    HStack {
+                        Text(NSLocalizedString("IntervalsView.workIntervalLength.label",
+                                               comment: "Work interval label"))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Text(String.localizedStringWithFormat(minStr, timer.workIntervalLength))
+                    }
                 }
             }
-            Stepper(value: $timer.shortRestIntervalLength, in: 1 ... 60) {
-                HStack {
-                    Text(NSLocalizedString("IntervalsView.shortRestIntervalLength.label",
-                                           comment: "Short rest interval label"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(String.localizedStringWithFormat(minStr, timer.shortRestIntervalLength))
+            HoverRow {
+                Stepper(value: $timer.shortRestIntervalLength, in: 1 ... 60) {
+                    HStack {
+                        Text(NSLocalizedString("IntervalsView.shortRestIntervalLength.label",
+                                               comment: "Short rest interval label"))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Text(String.localizedStringWithFormat(minStr, timer.shortRestIntervalLength))
+                    }
                 }
             }
-            Stepper(value: $timer.longRestIntervalLength, in: 1 ... 60) {
-                HStack {
-                    Text(NSLocalizedString("IntervalsView.longRestIntervalLength.label",
-                                           comment: "Long rest interval label"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(String.localizedStringWithFormat(minStr, timer.longRestIntervalLength))
+            HoverRow {
+                Stepper(value: $timer.longRestIntervalLength, in: 1 ... 60) {
+                    HStack {
+                        Text(NSLocalizedString("IntervalsView.longRestIntervalLength.label",
+                                               comment: "Long rest interval label"))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Text(String.localizedStringWithFormat(minStr, timer.longRestIntervalLength))
+                    }
                 }
             }
             .help(NSLocalizedString("IntervalsView.longRestIntervalLength.help",
                                     comment: "Long rest interval hint"))
-            Stepper(value: $timer.workIntervalsInSet, in: 1 ... 10) {
-                HStack {
-                    Text(NSLocalizedString("IntervalsView.workIntervalsInSet.label",
-                                           comment: "Work intervals in a set label"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Text("\(timer.workIntervalsInSet)")
+            HoverRow {
+                Stepper(value: $timer.workIntervalsInSet, in: 1 ... 10) {
+                    HStack {
+                        Text(NSLocalizedString("IntervalsView.workIntervalsInSet.label",
+                                               comment: "Work intervals in a set label"))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Text("\(timer.workIntervalsInSet)")
+                    }
                 }
             }
             .help(NSLocalizedString("IntervalsView.workIntervalsInSet.help",
@@ -62,51 +100,55 @@ private struct SettingsView: View {
 
     var body: some View {
         VStack {
-            KeyboardShortcuts.Recorder(for: .startStopTimer) {
-                Text(NSLocalizedString("SettingsView.shortcut.label",
-                                       comment: "Shortcut label"))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            Toggle(isOn: $timer.stopAfterBreak) {
-                Text(NSLocalizedString("SettingsView.stopAfterBreak.label",
-                                       comment: "Stop after break label"))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }.toggleStyle(.switch)
-            Toggle(isOn: $timer.showTimerInMenuBar) {
-                Text(NSLocalizedString("SettingsView.showTimerInMenuBar.label",
-                                       comment: "Show timer in menu bar label"))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }.toggleStyle(.switch)
-                .onChange(of: timer.showTimerInMenuBar) { _ in
-                    timer.updateTimeLeft()
+            HoverRow {
+                KeyboardShortcuts.Recorder(for: .startStopTimer) {
+                    Text(NSLocalizedString("SettingsView.shortcut.label",
+                                           comment: "Shortcut label"))
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-            Toggle(isOn: $launchAtLogin.isEnabled) {
-                Text(NSLocalizedString("SettingsView.launchAtLogin.label",
-                                       comment: "Launch at login label"))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }.toggleStyle(.switch)
+            }
+            HoverRow {
+                Toggle(isOn: $timer.stopAfterBreak) {
+                    Text(NSLocalizedString("SettingsView.stopAfterBreak.label",
+                                           comment: "Stop after break label"))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }.toggleStyle(.switch)
+            }
+            HoverRow {
+                Toggle(isOn: $timer.showTimerInMenuBar) {
+                    Text(NSLocalizedString("SettingsView.showTimerInMenuBar.label",
+                                           comment: "Show timer in menu bar label"))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }.toggleStyle(.switch)
+                    .onChange(of: timer.showTimerInMenuBar) { _ in
+                        timer.updateTimeLeft()
+                    }
+            }
+            HoverRow {
+                Toggle(isOn: $launchAtLogin.isEnabled) {
+                    Text(NSLocalizedString("SettingsView.launchAtLogin.label",
+                                           comment: "Launch at login label"))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }.toggleStyle(.switch)
+                }
             Spacer().frame(minHeight: 0)
         }
         .padding(4)
     }
 }
 
-private struct VolumeSlider: View {
+private struct VolumeStepButton: View {
     @Environment(\.colorScheme) private var colorScheme
-    @Binding var volume: Double
-    private let volumeRange = 0.0...2.0
-    private let step = 0.1
+    @State private var isHovered = false
+    let symbol: String
+    let isDisabled: Bool
+    let action: () -> Void
 
-    private func updateVolume(delta: Double) {
-        let nextValue = ((volume + delta) * 10).rounded() / 10
-        volume = min(max(nextValue, volumeRange.lowerBound), volumeRange.upperBound)
-    }
-
-    private func controlButton(symbol: String, action: @escaping () -> Void) -> some View {
+    var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 10, weight: .bold))
-                .foregroundColor(buttonForegroundColor)
+                .foregroundColor(isDisabled ? buttonForegroundColor.opacity(0.45) : buttonForegroundColor)
                 .frame(width: 24, height: 24)
                 .background(
                     Circle()
@@ -116,65 +158,94 @@ private struct VolumeSlider: View {
                     Circle()
                         .stroke(buttonStrokeColor, lineWidth: 1)
                 )
+                .scaleEffect(isHovered && !isDisabled ? 1.12 : 1)
+                .shadow(color: Color.black.opacity(isHovered && !isDisabled ? 0.18 : 0),
+                        radius: isHovered ? 4 : 0,
+                        y: 1)
         }
         .buttonStyle(.plain)
+        .disabled(isDisabled)
+        .animation(.easeOut(duration: 0.12), value: isHovered)
+        .onHover { over in
+            isHovered = over
+        }
     }
 
     private var buttonForegroundColor: Color {
-        colorScheme == .dark ? Color.white.opacity(0.82) : Color.black.opacity(0.68)
+        colorScheme == .dark ? Color.white.opacity(isHovered ? 0.98 : 0.82) : Color.black.opacity(isHovered ? 0.82 : 0.68)
     }
 
     private var buttonBackgroundColor: Color {
-        colorScheme == .dark ? Color.white.opacity(0.10) : Color.black.opacity(0.08)
+        colorScheme == .dark ? Color.white.opacity(isHovered ? 0.18 : 0.10) : Color.black.opacity(isHovered ? 0.13 : 0.08)
     }
 
     private var buttonStrokeColor: Color {
-        colorScheme == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.10)
+        colorScheme == .dark ? Color.white.opacity(isHovered ? 0.24 : 0.12) : Color.black.opacity(isHovered ? 0.18 : 0.10)
+    }
+}
+
+private struct VolumeSlider: View {
+    @Binding var volume: Double
+    private let volumeRange = 0.0...2.0
+    private let step = 0.1
+
+    private func updateVolume(delta: Double) {
+        let nextValue = ((volume + delta) * 10).rounded() / 10
+        volume = min(max(nextValue, volumeRange.lowerBound), volumeRange.upperBound)
     }
 
     var body: some View {
         HStack(spacing: 10) {
-            controlButton(symbol: "minus") {
+            VolumeStepButton(symbol: "minus",
+                             isDisabled: volume <= volumeRange.lowerBound) {
                 updateVolume(delta: -step)
             }
-            .opacity(volume > volumeRange.lowerBound ? 1.0 : 0.4)
-            .disabled(volume <= volumeRange.lowerBound)
 
             Text(String(format: "%.1f", volume))
                 .font(.system(.body).monospacedDigit())
                 .frame(width: 32)
 
-            controlButton(symbol: "plus") {
+            VolumeStepButton(symbol: "plus",
+                             isDisabled: volume >= volumeRange.upperBound) {
                 updateVolume(delta: step)
             }
-            .opacity(volume < volumeRange.upperBound ? 1.0 : 0.4)
-            .disabled(volume >= volumeRange.upperBound)
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
+    }
+}
+
+private struct SoundVolumeRow: View {
+    let title: String
+    @Binding var volume: Double
+
+    var body: some View {
+        HoverRow(verticalPadding: 7) {
+            HStack {
+                Text(title)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                VolumeSlider(volume: $volume)
+                    .frame(width: 110)
+            }
+        }
     }
 }
 
 private struct SoundsView: View {
     @EnvironmentObject var player: TBPlayer
 
-    private var columns = [
-        GridItem(.flexible()),
-        GridItem(.fixed(110))
-    ]
-
     var body: some View {
-        LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
-            Text(NSLocalizedString("SoundsView.isWindupEnabled.label",
-                                   comment: "Windup label"))
-            VolumeSlider(volume: $player.windupVolume)
-            Text(NSLocalizedString("SoundsView.isDingEnabled.label",
-                                   comment: "Ding label"))
-            VolumeSlider(volume: $player.dingVolume)
-            Text(NSLocalizedString("SoundsView.rainVolume.label",
-                                   comment: "Rain volume label"))
-            VolumeSlider(volume: $player.rainVolume)
+        VStack(spacing: 6) {
+            SoundVolumeRow(title: NSLocalizedString("SoundsView.isWindupEnabled.label",
+                                                    comment: "Windup label"),
+                           volume: $player.windupVolume)
+            SoundVolumeRow(title: NSLocalizedString("SoundsView.isDingEnabled.label",
+                                                    comment: "Ding label"),
+                           volume: $player.dingVolume)
+            SoundVolumeRow(title: NSLocalizedString("SoundsView.rainVolume.label",
+                                                    comment: "Rain volume label"),
+                           volume: $player.rainVolume)
         }
-        .padding(.horizontal, 4)
+        .padding(.horizontal, 0)
         .padding(.vertical, 10)
         Spacer().frame(minHeight: 0)
     }
@@ -307,27 +378,31 @@ struct TBPopoverView: View {
             }
 
             Group {
-                Button {
-                    NSApp.activate(ignoringOtherApps: true)
-                    NSApp.orderFrontStandardAboutPanel()
-                } label: {
-                    Text(NSLocalizedString("TBPopoverView.about.label",
-                                           comment: "About label"))
-                    Spacer()
-                    Text("⌘ A").foregroundColor(Color.gray)
+                HoverRow(verticalPadding: 5) {
+                    Button {
+                        NSApp.activate(ignoringOtherApps: true)
+                        NSApp.orderFrontStandardAboutPanel()
+                    } label: {
+                        Text(NSLocalizedString("TBPopoverView.about.label",
+                                               comment: "About label"))
+                        Spacer()
+                        Text("⌘ A").foregroundColor(Color.gray)
+                    }
+                    .buttonStyle(.plain)
+                    .keyboardShortcut("a")
                 }
-                .buttonStyle(.plain)
-                .keyboardShortcut("a")
-                Button {
-                    NSApplication.shared.terminate(self)
-                } label: {
-                    Text(NSLocalizedString("TBPopoverView.quit.label",
-                                           comment: "Quit label"))
-                    Spacer()
-                    Text("⌘ Q").foregroundColor(Color.gray)
+                HoverRow(verticalPadding: 5) {
+                    Button {
+                        NSApplication.shared.terminate(self)
+                    } label: {
+                        Text(NSLocalizedString("TBPopoverView.quit.label",
+                                               comment: "Quit label"))
+                        Spacer()
+                        Text("⌘ Q").foregroundColor(Color.gray)
+                    }
+                    .buttonStyle(.plain)
+                    .keyboardShortcut("q")
                 }
-                .buttonStyle(.plain)
-                .keyboardShortcut("q")
             }
         }
         #if DEBUG
